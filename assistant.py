@@ -42,13 +42,12 @@ else:
 
 
 #SSD faster but less accurate
-#from torchvision.models.detection import ssdlite320_mobilenet_v3_large
-
-#model = ssdlite320_mobilenet_v3_large(pretrained=True)
+from torchvision.models.detection import ssdlite320_mobilenet_v3_large
+model = ssdlite320_mobilenet_v3_large(pretrained=True)
 #ai model, Faster R-CNN is accurate but slow: use SSD for faster stuff:
-from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights
-weights = FasterRCNN_ResNet50_FPN_Weights.DEFAULT
-model = models.detection.fasterrcnn_resnet50_fpn(weights=weights)
+#from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights
+#weights = FasterRCNN_ResNet50_FPN_Weights.DEFAULT
+#model = models.detection.fasterrcnn_resnet50_fpn(weights=weights)
 model.eval()
 print("Model loaded successfully.")
 
