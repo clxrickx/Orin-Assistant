@@ -31,7 +31,15 @@ def detect_sound(duration=0.1, samplerate=44100):
     volume = np.linalg.norm(audio)
     return volume > AUDIO_THRESHOLD, volume
 
-
+def print_detected_objects(labels, scores, threshold=0.3):
+    detected = []
+    for label, score in zip(labels, scores):
+        if score > threshold:
+            detected.append(f"{COCO_CLASSES.get(int(label), 'unknown')}: {score:.2f}")
+    if detected:
+        print("Detected objects:\n", "\n".join(detected))
+    else:
+        print("No objects detected above threshold ", threshold*100, "%")
 
 clr()
 if not cap.isOpened():
