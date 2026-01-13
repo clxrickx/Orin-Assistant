@@ -17,7 +17,7 @@ cap.set(cv2.CAP_PROP_FPS, 60)  # Frame rate
 
 
 def clr():
-    os.system('clear')
+    os.system('cls')
 
 def detect_sound(duration=0.1, samplerate=44100):
     audio = sd.rec(
@@ -59,12 +59,10 @@ model = ssdlite320_mobilenet_v3_large(pretrained=True)
 model.eval()
 print("Model loaded successfully.")
 
-# -----------------------------
-
 transform = transforms.Compose([
     transforms.ToTensor()  # Converts HxWxC NumPy array (0-255) to CxHxW tensor (0-1)
 ])
-# Main loop
+
 
 while True:
     cpu_percent = psutil.cpu_percent(interval=None) #CPU load
@@ -72,26 +70,23 @@ while True:
     ram_used = mem.percent
     sound_detected, volume = detect_sound()
     frames_loaded += 1
-    # 5a. Capture a frame from the camera
+
     ret, frame = cap.read()
     if not ret:
         print("Failed to grab frame")
         break
 
-    # 5b. Convert frame to PyTorch tensor
     input_tensor = transform(frame)
     input_tensor = input_tensor.unsqueeze(0)  # Add batch dimension [1, C, H, W]
 
-    # 5c. Run AI model (inference only, no gradients)
+
     with torch.no_grad():
         outputs = model(input_tensor)
 
-    # 5d. Extract model outputs
     boxes = outputs[0]['boxes']       # Bounding boxes [x1, y1, x2, y2]
     labels = outputs[0]['labels']     # Object class labels (person = 1)
     scores = outputs[0]['scores']     # Confidence scores (0-1)
 
-    # Measure inference time/alt to TOPS
     start = time.time()
 
     with torch.no_grad():
@@ -99,13 +94,12 @@ while True:
 
     inference_time = time.time() - start
 
+    text = f"CPU Load: {cpu_percent}%\nRAM Used: {ram_used}%"
 
-    # Draw detections on the frame, rect.
     for box, label, score in zip(boxes, labels, scores):
-        if label == 1 and score > 0.8:  # person with high confidence
+        if score > 0.8:  # person with high confidence
             x1, y1, x2, y2 = box.int().tolist()
 
-            # Draw rectangle
             cv2.rectangle(
                 frame,
                 (x1, y1),
@@ -114,7 +108,6 @@ while True:
                 5              # thickness
             )
 
-            # Draw label text
             class_name = COCO_CLASSES.get(int(label), "unknown")
             text = f"{class_name}: {score:.2f}"
             cv2.putText(
@@ -124,6 +117,27 @@ while True:
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.6,
                 (0, 255, 0),
+                2
+            )
+        if score < 0.8 and score > 0.3:  # objects with low confidence
+            x1, y1, x2, y2 = box.int().tolist()
+            cv2.rectangle(
+                frame,
+                (x1, y1),
+                (x2, y2),
+                (0, 165, 255),   # bgr color
+                5              # thickness
+            )
+
+            class_name = COCO_CLASSES.get(int(label), "unknown")
+            text = f"{class_name}: {score:.2f}"
+            cv2.putText(
+                frame,
+                text,
+                (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 165, 255),
                 2
             )
         if sound_detected:
@@ -143,17 +157,12 @@ while True:
         if label == 1 and score > 0.8: #confidence of 0.8
             person_detected = True
             break
+
     clr()
-    print("Person detected:", person_detected)
     print("Frames loaded:", frames_loaded)
     print("Sound detected:", sound_detected, "Volume:", round(volume, 3))
     print("CPU Load (%):", cpu_percent)
     print("RAM Used (%):", ram_used)
+    print_detected_objects(labels, scores)
 
     cv2.imshow("Camera", frame)
-
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
