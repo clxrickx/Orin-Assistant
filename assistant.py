@@ -37,8 +37,12 @@ if torch.cuda.is_available():
     print("GPU: ", torch.cuda.get_device_name(0))
     batch_size = 3  # Increased batch size for faster inference on GPU
 else:
+    #if torch.backends.mps.is_available():
+    #    device = torch.device("mps")
+    #    print("MPS is available. Using MPS device. Thanks Apple :)")
+    #else:
     device = torch.device("cpu")
-    print('CUDA is not available. Using CPU. Puny Mac user :(')
+    print("WARNING: MPS is not available. Falling back to CPU. Puny Mac user :(")
     batch_size = 1 #slower inference for those puny mac users lol (me)
 if not cap.isOpened():
     print("Cannot open camera")
@@ -51,7 +55,7 @@ else:
 #model = ssdlite320_mobilenet_v3_large(pretrained=True)
 #ai model, Faster R-CNN is accurate but slow: use SSD for faster stuff:
 from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights
-weights = FasterRCNN_ResNet50_FPN_Weights.DEFAULT
+weights = FasterRCNN_ResNet50_FPN_Weights.COCO_V1
 model = models.detection.fasterrcnn_resnet50_fpn(weights=weights)
 model.eval()
 model.to(device)
@@ -85,69 +89,22 @@ while True:
     boxes = outputs[0]['boxes']       # Bounding boxes [x1, y1, x2, y2]
     labels = outputs[0]['labels']     # Object class labels (person = 1)
     scores = outputs[0]['scores']     # Confidence scores (0-1)
-    text = f"CPU Load: {cpu_percent}%\nRAM Used: {ram_used}%"
+    cv2.putText(frame, f"CPU Load: {cpu_percent}%\nRAM Used: {ram_used}%", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
 
     for box, label, score in zip(boxes, labels, scores):
         if score > 0.8:  # person with high confidence
             x1, y1, x2, y2 = box.int().tolist()
-
-            cv2.rectangle(
-                frame,
-                (x1, y1),
-                (x2, y2),
-                (0, 255, 0),   # bgr color
-                5              # thickness
-            )
-
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 5)
             class_name = COCO_CLASSES.get(int(label), "unknown")
-            text = f"{class_name}: {score:.2f}"
-            cv2.putText(
-                frame,
-                text,
-                (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (0, 255, 0),
-                2
-            )
+            cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
         if score < 0.8 and score > 0.3:  # objects with low confidence
             x1, y1, x2, y2 = box.int().tolist()
-            cv2.rectangle(
-                frame,
-                (x1, y1),
-                (x2, y2),
-                (0, 165, 255),   # bgr color
-                5              # thickness
-            )
-
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 165, 255), 5)
             class_name = COCO_CLASSES.get(int(label), "unknown")
-            text = f"{class_name}: {score:.2f}"
-            cv2.putText(
-                frame,
-                text,
-                (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (0, 165, 255),
-                2
-            )
-        if sound_detected:
-            cv2.putText(
-                frame,
-                "SOUND DETECTED",
-                (20, 40),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                3.0,
-                (0, 0, 255),
-                4
-            )
+            cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 2)
 
-
-    person_detected = False
-    for label, score in zip(labels, scores):
-        if label == 1 and score > 0.8: #confidence of 0.8
-            person_detected = True
-            break
+#removed sound detection for now, causes unnecessary overhead
 
     clr()
     print("Frames loaded:", frames_loaded)
@@ -156,7 +113,7 @@ while True:
 
     cv2.imshow("Camera", frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(30) & 0xFF == ord('q'):
         break
 
 cap.release()
