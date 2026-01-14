@@ -10,14 +10,14 @@ from coco_labels import COCO_CLASSES  # COCO dataset labels
 
 batch_size = 0
 frames_loaded = 0
-AUDIO_THRESHOLD = 0.05   #audio sens.
+AUDIO_THRESHOLD = 0.2   #audio sens.
 cap = cv2.VideoCapture(0)  # 0 = default webcam
-cap.set(cv2.CAP_PROP_FPS, 60)  # Frame rate
+cap.set(cv2.CAP_PROP_FPS, 30)  # Frame rate
 
 def clr():
     os.system('cls' or 'clear')
 
-def detect_sound(duration=0.1, samplerate=44100):
+def detect_sound(duration=0.1, samplerate=22050):
     audio = sd.rec(
         int(duration * samplerate),
         samplerate=samplerate,
@@ -29,15 +29,6 @@ def detect_sound(duration=0.1, samplerate=44100):
     volume = np.linalg.norm(audio)
     return volume > AUDIO_THRESHOLD, volume
 
-def print_detected_objects(labels, scores, threshold=0.3):
-    detected = []
-    for label, score in zip(labels, scores):
-        if score > threshold:
-            detected.append(f"{COCO_CLASSES.get(int(label), 'unknown')}: {score:.2f}")
-    if detected:
-        print("Detected objects:\n", "\n".join(detected))
-    else:
-        print("No objects detected above threshold ", threshold*100, "%")
 
 clr()
 if torch.cuda.is_available():
@@ -161,9 +152,6 @@ while True:
     clr()
     print("Frames loaded:", frames_loaded)
     print("Sound detected:", sound_detected, "Volume:", round(volume, 3))
-    print("CPU Load (%):", cpu_percent)
-    print("RAM Used (%):", ram_used)
-    print_detected_objects(labels, scores)
     print("Inference time:", round(inference_time, 3), "seconds")
 
     cv2.imshow("Camera", frame)
