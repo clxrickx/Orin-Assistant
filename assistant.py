@@ -15,7 +15,7 @@ cap = cv2.VideoCapture(0)  # 0 = default webcam
 cap.set(cv2.CAP_PROP_FPS, 30)  # Frame rate
 
 def clr():
-    os.system('cls' or 'clear')
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def detect_sound(duration=0.1, samplerate=22050):
     audio = sd.rec(
