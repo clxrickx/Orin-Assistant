@@ -106,7 +106,6 @@ while True:
 
     clr()
     print("Frames loaded:", frames_loaded)
-    print("Sound detected:", sound_detected, "Volume:", round(volume, 3))
     print("Inference time:", round(inference_time, 3), "seconds")    
 
     
