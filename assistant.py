@@ -44,7 +44,7 @@ if torch.cuda.is_available():
     device = torch.device("cuda")
     print('CUDA is available. Using GPU. Thanks NVIDIA :)')
     print("GPU: ", torch.cuda.get_device_name(0))
-    batch_size = 10 #faster inference
+    batch_size = 3  # Increased batch size for faster inference on GPU
 else:
     device = torch.device("cpu")
     print('CUDA is not available. Using CPU. Puny Mac user :(')
