@@ -3,8 +3,6 @@ import numpy as np          # Array manipulation
 import torch                # AI model computation
 from torchvision import models, transforms  # Pretrained vision models
 from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights # Pretrained weights
-import tensorrt as trt    # TensorRT for optimized inference
-import concurrent.futures # Parallel processing
 import sounddevice as sd  # Audio i/o
 import time                 
 import os
@@ -33,15 +31,9 @@ def detect_sound(duration=0.1, samplerate=22050):
     return volume > AUDIO_THRESHOLD, volume
 
 clr()
-if torch.backends.mps.is_available():
-    device = torch.device("mps")
-    cv2.ocl.setUseMps(True)
-    cv2.ocl.setManually(False)
-    print("MPS is available. Using MPS device. Thanks Apple :)")
-else:
-    device = torch.device("cpu")
-    print("WARNING: MPS is not available. Falling back to CPU. Puny Mac user :(")
-    batch_size = 1 #slower inference for those puny mac users lol (me)
+device = torch.device("cpu")
+print("WARNING: MPS is not available. Falling back to CPU. Puny Mac user :(")
+batch_size = 1 #slower inference for those puny mac users lol (me)
 if not cap.isOpened():
     print("Cannot open camera")
     exit()
@@ -58,7 +50,10 @@ model = models.detection.fasterrcnn_resnet50_fpn(weights=weights)
 model.eval()
 model.to(device)
 print("Model loaded successfully.")
-input("Press Enter to continue...")
+debug = input("Press Enter to continue...")
+if debug.casefold() == "debug":
+    print(model)
+    input("Press Enter to continue...")
 transform = transforms.Compose([
     transforms.ToTensor()  # Converts HxWxC NumPy array (0-255) to CxHxW tensor (0-1)
 ])
@@ -99,13 +94,13 @@ while True:
             x1, y1, x2, y2 = box.int().tolist()
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 165, 255), 1)
             class_name = COCO_CLASSES.get(int(label), "unknown")
-            cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 1)
+            cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 1)
 
         if score < 0.3:
             x1, y1, x2, y2 = box.int().tolist()
-            cv2.rectangle(frame, (x1, y1,), (x2, y2), (0, 0, 255), 0.5)
+            cv2.rectangle(frame, (x1, y1,), (x2, y2), (0, 0, 255), 1)
             class_name = COCO_CLASSES.get(int(label), "unknown")
-            cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 0.5)
+            cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1)
 
 #removed sound detection for now, causes unnecessary overhead
 
