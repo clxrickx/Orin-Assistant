@@ -2,6 +2,9 @@ import cv2                  # Camera and image display
 import numpy as np          # Array manipulation
 import torch                # AI model computation
 from torchvision import models, transforms  # Pretrained vision models
+from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights # Pretrained weights
+import tensorrt as trt    # TensorRT for optimized inference
+import concurrent.futures # Parallel processing
 import sounddevice as sd  # Audio i/o
 import time                 
 import os
@@ -30,16 +33,12 @@ def detect_sound(duration=0.1, samplerate=22050):
     return volume > AUDIO_THRESHOLD, volume
 
 clr()
-if torch.cuda.is_available():
-    device = torch.device("cuda")
-    print('CUDA is available. Using GPU. Thanks NVIDIA :)')
-    print("GPU: ", torch.cuda.get_device_name(0))
-    batch_size = 3  # Increased batch size for faster inference on GPU
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+    cv2.ocl.setUseMps(True)
+    cv2.ocl.setManually(False)
+    print("MPS is available. Using MPS device. Thanks Apple :)")
 else:
-    #if torch.backends.mps.is_available():
-    #    device = torch.device("mps")
-    #    print("MPS is available. Using MPS device. Thanks Apple :)")
-    #else:
     device = torch.device("cpu")
     print("WARNING: MPS is not available. Falling back to CPU. Puny Mac user :(")
     batch_size = 1 #slower inference for those puny mac users lol (me)
