@@ -29,7 +29,6 @@ def detect_sound(duration=0.1, samplerate=22050):
     volume = np.linalg.norm(audio)
     return volume > AUDIO_THRESHOLD, volume
 
-
 clr()
 if torch.cuda.is_available():
     device = torch.device("cuda")
@@ -89,30 +88,30 @@ while True:
     boxes = outputs[0]['boxes']       # Bounding boxes [x1, y1, x2, y2]
     labels = outputs[0]['labels']     # Object class labels (person = 1)
     scores = outputs[0]['scores']     # Confidence scores (0-1)
-    cv2.putText(frame, f"CPU Load: {cpu_percent}%\nRAM Used: {ram_used}%", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
+    cv2.putText(frame, f"CPU Load: {cpu_percent}% | RAM Used: {ram_used}%", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
 
     for box, label, score in zip(boxes, labels, scores):
         if score > 0.8:  # person with high confidence
             x1, y1, x2, y2 = box.int().tolist()
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 5)
             class_name = COCO_CLASSES.get(int(label), "unknown")
-            cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+            cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         if score < 0.8 and score > 0.3:  # objects with low confidence
             x1, y1, x2, y2 = box.int().tolist()
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 165, 255), 5)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 165, 255), 1)
             class_name = COCO_CLASSES.get(int(label), "unknown")
-            cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 2)
+            cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 1)
 
 #removed sound detection for now, causes unnecessary overhead
 
     clr()
     print("Frames loaded:", frames_loaded)
     print("Sound detected:", sound_detected, "Volume:", round(volume, 3))
-    print("Inference time:", round(inference_time, 3), "seconds")
+    print("Inference time:", round(inference_time, 3), "seconds")    
 
+    
     cv2.imshow("Camera", frame)
-
     if cv2.waitKey(30) & 0xFF == ord('q'):
         break
 
