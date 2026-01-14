@@ -102,6 +102,12 @@ while True:
             class_name = COCO_CLASSES.get(int(label), "unknown")
             cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 1)
 
+        if score < 0.3:
+            x1, y1, x2, y2 = box.int().tolist()
+            cv2.rectangle(frame, (x1, y1,), (x2, y2), (0, 0, 255), 0.5)
+            class_name = COCO_CLASSES.get(int(label), "unknown")
+            cv2.putText(frame, class_name + f": {score*100:.0f}%", (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 0.5)
+
 #removed sound detection for now, causes unnecessary overhead
 
     clr()
