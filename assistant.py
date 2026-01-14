@@ -8,13 +8,11 @@ import os
 import psutil # System monitoring
 from coco_labels import COCO_CLASSES  # COCO dataset labels
 
-
+batch_size = 0
 frames_loaded = 0
 AUDIO_THRESHOLD = 0.05   #audio sens.
 cap = cv2.VideoCapture(0)  # 0 = default webcam
 cap.set(cv2.CAP_PROP_FPS, 60)  # Frame rate
-
-
 
 def clr():
     os.system('cls')
@@ -42,23 +40,32 @@ def print_detected_objects(labels, scores, threshold=0.3):
         print("No objects detected above threshold ", threshold*100, "%")
 
 clr()
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+    print('CUDA is available. Using GPU. Thanks NVIDIA :)')
+    print("GPU: ", torch.cuda.get_device_name(0))
+    batch_size = 10 #faster inference
+else:
+    device = torch.device("cpu")
+    print('CUDA is not available. Using CPU. Puny Mac user :(')
+    batch_size = 1 #slower inference for those puny mac users lol (me)
 if not cap.isOpened():
     print("Cannot open camera")
     exit()
 else:
     print("Camera opened successfully")
 
-
 #SSD faster but less accurate
-from torchvision.models.detection import ssdlite320_mobilenet_v3_large
-model = ssdlite320_mobilenet_v3_large(pretrained=True)
+#from torchvision.models.detection import ssdlite320_mobilenet_v3_large
+#model = ssdlite320_mobilenet_v3_large(pretrained=True)
 #ai model, Faster R-CNN is accurate but slow: use SSD for faster stuff:
-#from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights
-#weights = FasterRCNN_ResNet50_FPN_Weights.DEFAULT
-#model = models.detection.fasterrcnn_resnet50_fpn(weights=weights)
+from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights
+weights = FasterRCNN_ResNet50_FPN_Weights.DEFAULT
+model = models.detection.fasterrcnn_resnet50_fpn(weights=weights)
 model.eval()
+model.to(device)
 print("Model loaded successfully.")
-
+input("Press Enter to continue...")
 transform = transforms.Compose([
     transforms.ToTensor()  # Converts HxWxC NumPy array (0-255) to CxHxW tensor (0-1)
 ])
@@ -78,22 +85,15 @@ while True:
 
     input_tensor = transform(frame)
     input_tensor = input_tensor.unsqueeze(0)  # Add batch dimension [1, C, H, W]
-
-
+    input_tensor = input_tensor.to(device)
+    start = time.time()
     with torch.no_grad():
         outputs = model(input_tensor)
+    inference_time = time.time() - start
 
     boxes = outputs[0]['boxes']       # Bounding boxes [x1, y1, x2, y2]
     labels = outputs[0]['labels']     # Object class labels (person = 1)
     scores = outputs[0]['scores']     # Confidence scores (0-1)
-
-    start = time.time()
-
-    with torch.no_grad():
-        outputs = model(input_tensor)
-
-    inference_time = time.time() - start
-
     text = f"CPU Load: {cpu_percent}%\nRAM Used: {ram_used}%"
 
     for box, label, score in zip(boxes, labels, scores):
@@ -164,5 +164,12 @@ while True:
     print("CPU Load (%):", cpu_percent)
     print("RAM Used (%):", ram_used)
     print_detected_objects(labels, scores)
+    print("Inference time:", round(inference_time, 3), "seconds")
 
     cv2.imshow("Camera", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
