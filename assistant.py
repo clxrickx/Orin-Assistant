@@ -10,9 +10,9 @@ from coco_labels import COCO_CLASSES  # COCO dataset labels
 
 batch_size = 0
 frames_loaded = 0
-AUDIO_THRESHOLD = 0.2   #audio sens.
+AUDIO_THRESHOLD = 0.2   #audio sens, higher will increase performance, less overhead
 cap = cv2.VideoCapture(0)  # 0 = default webcam
-cap.set(cv2.CAP_PROP_FPS, 30)  # Frame rate
+cap.set(cv2.CAP_PROP_FPS, 60)  # Frame rate
 
 def clr():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -69,7 +69,6 @@ while True:
     cpu_percent = psutil.cpu_percent(interval=None) #CPU load
     mem = psutil.virtual_memory() #RAM load
     ram_used = mem.percent
-    sound_detected, volume = detect_sound()
     frames_loaded += 1
 
     ret, frame = cap.read()
@@ -88,7 +87,7 @@ while True:
     boxes = outputs[0]['boxes']       # Bounding boxes [x1, y1, x2, y2]
     labels = outputs[0]['labels']     # Object class labels (person = 1)
     scores = outputs[0]['scores']     # Confidence scores (0-1)
-    cv2.putText(frame, f"CPU Load: {cpu_percent}% | RAM Used: {ram_used}%", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
+    cv2.putText(frame, f"CPU Load: {cpu_percent}% | RAM Used: {ram_used}%", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 4)
 
     for box, label, score in zip(boxes, labels, scores):
         if score > 0.8:  # person with high confidence
