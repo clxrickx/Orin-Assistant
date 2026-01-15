@@ -31,8 +31,12 @@ def detect_sound(duration=0.1, samplerate=22050):
     return volume > AUDIO_THRESHOLD, volume
 
 clr()
-device = torch.device("cpu")
-print("WARNING: MPS is not available. Falling back to CPU. Puny Mac user :(")
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+    print("MPS is available! Using MPS for inference.")
+else:
+    device = torch.device("cpu")
+    print("WARNING: MPS is not available. Falling back to CPU. Puny Mac user :(")
 batch_size = 1 #slower inference for those puny mac users lol (me)
 if not cap.isOpened():
     print("Cannot open camera")
@@ -52,8 +56,11 @@ model.to(device)
 print("Model loaded successfully.")
 debug = input("Press Enter to continue...")
 if debug.casefold() == "debug":
-    print(model)
+    print("Model:", model)
+    print("Weights:", weights)
+    print("Device:", device)
     input("Press Enter to continue...")
+
 transform = transforms.Compose([
     transforms.ToTensor()  # Converts HxWxC NumPy array (0-255) to CxHxW tensor (0-1)
 ])
@@ -82,6 +89,11 @@ while True:
     labels = outputs[0]['labels']     # Object class labels (person = 1)
     scores = outputs[0]['scores']     # Confidence scores (0-1)
     cv2.putText(frame, f"CPU Load: {cpu_percent}% | RAM Used: {ram_used}%", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 4)
+
+    #pre-allocate bounding box arrays
+    boxes_list = np.arange(0)
+    labels_list = np.arange(0)
+    scores_list = np.arange(0)
 
     for box, label, score in zip(boxes, labels, scores):
         if score > 0.8:  # person with high confidence
