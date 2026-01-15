@@ -31,12 +31,16 @@ def detect_sound(duration=0.1, samplerate=22050):
     return volume > AUDIO_THRESHOLD, volume
 
 clr()
-if torch.backends.mps.is_available():
-    device = torch.device("mps")
-    print("MPS is available! Using MPS for inference.")
+deviceselect = input('MPS or CPU:')
+if deviceselect == 'mps':
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")
+        print("MPS is available! Using MPS for inference.")
+    else:
+        device = torch.device("cpu")
+        print("WARNING: MPS is not available. Falling back to CPU. Puny Mac user :(")
 else:
     device = torch.device("cpu")
-    print("WARNING: MPS is not available. Falling back to CPU. Puny Mac user :(")
 batch_size = 1 #slower inference for those puny mac users lol (me)
 if not cap.isOpened():
     print("Cannot open camera")
